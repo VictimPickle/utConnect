@@ -32,6 +32,10 @@ done
 gw=$(ipconfig getoption "$IFACE" router 2>/dev/null)
 [ -n "$gw" ] || { log "$ip has no router yet"; exit 0; }
 
+# Only act on the University of Tehran Wi-Fi (gateways 172.18.x / 172.30.x).
+# Home, hotspot and other networks exit silently, without touching the log.
+case "$gw" in 172.18.*|172.30.*) ;; *) exit 0 ;; esac
+
 # Debounce only duplicates of an already-settled state (our own route changes
 # fire new notifications): same network, ok within 20s, or failed within 30s.
 if [ -z "$mode" ] && [ -f "$STATE" ]; then

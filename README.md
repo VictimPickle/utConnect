@@ -3,10 +3,13 @@
 Auto-login to the University of Tehran (UT) Wi-Fi captive portal (FortiGate),
 and auto-logout on shutdown/restart. macOS and Windows.
 
-- Runs from `launchd` only when the network actually changes (or the machine shuts
-  down) — no background polling, no idle CPU/RAM use.
-- Only acts when the gateway's captive-portal redirect actually points at
-  `internet.ut.ac.ir`. On any other Wi-Fi it does nothing.
+- Runs from `launchd` when the network changes (or the machine shuts down), plus a
+  cheap re-check every 30 s so a missed event (AP roaming, slow DHCP) still logs in.
+- macOS: only acts on gateways `172.18.*` / `172.30.*` (UT Wi-Fi) and exits silently
+  elsewhere. It also only logs in when the captive-portal redirect actually points
+  at `internet.ut.ac.ir`.
+- `install.sh`/`update.sh` add a sudoers rule so you can run
+  `sudo /usr/local/libexec/ut-wifi-login --force` without a password.
 - Routes portal traffic directly over Wi-Fi, so it works even if a VPN/tunnel app
   is running and would otherwise swallow the connection.
 - If login fails with a "too many devices / sessions" style error, it logs itself
