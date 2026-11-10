@@ -84,7 +84,7 @@ function Invoke-PortalCurl {
         [string[]]$ExtraArgs,
         [string]$StdinData = $null
     )
-    $baseArgs = @("-s", "-m", "$Timeout", "--interface", $LocalIP, "--resolve", "${PortalHost}:443:${PortalIP}") + $ExtraArgs
+    $baseArgs = @("-s", "-k", "-m", "$Timeout", "--interface", $LocalIP, "--resolve", "${PortalHost}:443:${PortalIP}") + $ExtraArgs
     if ($null -ne $StdinData) {
         return ($StdinData | & $CurlExe @baseArgs 2>$null) -join "`n"
     } else {
@@ -214,6 +214,12 @@ try {
 
     Set-PortalRoute -Gw $gw -IfIndex $ifIndex
     $page = Invoke-PortalCurl -LocalIP $ip -Timeout 8 -ExtraArgs @("-L", $url)
+    # Retry once if the portal returned an empty body (common behind captive portals)
+    if ([string]::IsNullOrEmpty($page)) {
+        Write-Log "portal returned empty body on $url, retrying"
+        Start-Sleep -Seconds 2
+        $page = Invoke-PortalCurl -LocalIP $ip -Timeout 12 -ExtraArgs @("-L", $url)
+    }
     for ($i = 0; $i -lt 2; $i++) {
         if ($page -match 'name="magic"') { break }
         if ($page -match "window\.location=[`"']([^`"']+)[`"']") {
