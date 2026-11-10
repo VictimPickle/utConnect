@@ -32,6 +32,26 @@ done
 gw=$(ipconfig getoption "$IFACE" router 2>/dev/null)
 [ -n "$gw" ] || { log "$ip has no router yet"; exit 0; }
 
+# University of Tehran Wi-Fi is recognised by its gateway (172.18.x / 172.30.x).
+# Any other gateway (e.g. NBIC) gets one cheap probe: we only go on if the
+# captive-portal redirect really points at the UT portal. Otherwise exit, and
+# log the gateway once per network so a missed UT network is easy to spot.
+known=""
+case "$gw" in 172.18.*|172.30.*) known=1 ;; esac
+if [ -z "$known" ] && [ -z "$mode" ]; then
+  s_ip=""; s_gw=""; s_t=0; s_r=""
+  [ -f "$STATE" ] && read -r s_ip s_gw s_t s_r < "$STATE"
+  same=""; [ "$s_ip $s_gw" = "$ip $gw" ] && [ "$s_r" = skip ] && same=1
+  [ -n "$same" ] && [ $(( $(date +%s) - s_t )) -lt 60 ] && exit 0
+  p=$(curl -s -m 5 --interface "$IFACE" "$PROBE" 2>/dev/null)
+  case "$p" in
+    *window.location=*"$PORTAL_HOST"*) log "non-UT gateway $gw ($ip) but redirects to $PORTAL_HOST: treating as UT" ;;
+    *)
+      [ -n "$same" ] || log "not UT Wi-Fi: $ip via $gw (no $PORTAL_HOST redirect), skipping"
+      echo "$ip $gw $(date +%s) skip" > "$STATE"; exit 0 ;;
+  esac
+fi
+
 # Debounce only duplicates of an already-settled state (our own route changes
 # fire new notifications): same network, ok within 20s, or failed within 30s.
 if [ -z "$mode" ] && [ -f "$STATE" ]; then

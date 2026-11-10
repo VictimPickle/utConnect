@@ -14,6 +14,11 @@ cd "$(dirname "$0")"
 [ -f /usr/local/etc/ut-wifi-login/credentials ] || { echo "no credentials yet: run install.sh"; exit 1; }
 install -m 755 -o root -g wheel ut-wifi-login ut-wifi-logout-on-exit /usr/local/libexec/
 install -m 644 -o root -g wheel com.utconnect.ut-wifi-login.plist com.utconnect.ut-wifi-logout.plist /Library/LaunchDaemons/
+if [ -n "$SUDO_USER" ] && [ "$SUDO_USER" != root ]; then   # let this user run the login script without a password
+  printf '%s ALL=(root) NOPASSWD: /usr/local/libexec/ut-wifi-login\n' "$SUDO_USER" > /etc/sudoers.d/ut-wifi-login.tmp
+  chmod 440 /etc/sudoers.d/ut-wifi-login.tmp
+  if visudo -cf /etc/sudoers.d/ut-wifi-login.tmp >/dev/null; then mv /etc/sudoers.d/ut-wifi-login.tmp /etc/sudoers.d/ut-wifi-login; else rm -f /etc/sudoers.d/ut-wifi-login.tmp; echo "sudoers rule skipped"; fi
+fi
 load ut-wifi-login
 load ut-wifi-logout
 echo updated

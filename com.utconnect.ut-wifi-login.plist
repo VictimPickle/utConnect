@@ -13,6 +13,7 @@
       <dict><key>Notification</key><string>com.apple.system.config.network_change</string></dict>
     </dict>
   </dict>
+  <key>StartInterval</key><integer>30</integer>
   <key>ThrottleInterval</key><integer>15</integer>
   <key>ProcessType</key><string>Background</string>
   <key>LowPriorityIO</key><true/>
